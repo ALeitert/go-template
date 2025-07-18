@@ -33,3 +33,9 @@ lint-check: check-golangci-lint
 
 ut:
 	go test -parallel=1 -race ./...
+
+
+### Deploy ##
+
+build-docker:
+	docker build -f ./Dockerfile . -t go-template
