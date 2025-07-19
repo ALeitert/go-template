@@ -20,6 +20,14 @@ func main() {
 
 	ctx, _ := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 
+	err := run(ctx)
+	if err != nil {
+		fmt.Println(eris.ToString(err, true))
+		os.Exit(1)
+	}
+}
+
+func run(ctx context.Context) error {
 	//
 	// Load and print config.
 
@@ -29,8 +37,7 @@ func main() {
 
 	err := config.C.Load(configPath)
 	if err != nil {
-		fmt.Println("Error while loading config:", eris.ToString(err, true))
-		os.Exit(1)
+		return eris.Wrap(err, "error while loading config")
 	}
 	config.C.Print()
 
@@ -39,8 +46,7 @@ func main() {
 
 	err = database.Connect(ctx)
 	if err != nil {
-		fmt.Println("Failed to connect to database:", eris.ToString(err, true))
-		os.Exit(1)
+		return eris.Wrap(err, "Failed to connect to database")
 	}
 
 	//
@@ -50,7 +56,8 @@ func main() {
 		// List services here.
 	})
 	if err != nil {
-		fmt.Println("Error while running services:", eris.ToString(err, true))
-		os.Exit(1)
+		return eris.Wrap(err, "error while running services")
 	}
+
+	return nil
 }
