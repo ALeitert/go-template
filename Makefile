@@ -5,14 +5,6 @@ run:
 	go run cmd/main.go
 
 
-### Mod Tidy ###
-
-mod-tidy-check:
-	git restore :/ && git clean -d -f
-	go mod tidy
-	git diff --exit-code
-
-
 ### Linting ###
 
 check-golangci-lint:
@@ -51,6 +43,12 @@ gen-clean-sql:
 
 codegen:
 	make gen-sql
+	go mod tidy
+
+codegen-check:
+	git restore :/ && git clean -d -f
+	make codegen
+	git diff --exit-code
 
 build-docker: codegen
 	docker build -f ./Dockerfile . -t go-template

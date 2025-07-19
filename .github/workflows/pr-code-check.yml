@@ -16,9 +16,9 @@ jobs:
     - uses: actions/setup-go@v5
       with:
         go-version: '1.24'
-    - name: Mod Tidy Check
+    - name: Codegen Check
       shell: bash
-      run: make mod-tidy-check
+      run: make codegen-check
     - name: Lint Check
       shell: bash
       run: make lint-check
