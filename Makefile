@@ -35,12 +35,6 @@ ut:
 	go test -parallel=1 -race ./...
 
 
-### Deploy ##
-
-build-docker:
-	docker build -f ./Dockerfile . -t go-template
-
-
 ### SQL ###
 
 DB_DIR=$(PROJ_DIR)/internal/database
@@ -51,3 +45,12 @@ gen-sql: gen-clean-sql
 
 gen-clean-sql:
 	@cd $(DB_DIR)/querier && rm -f *gen.go
+
+
+### Build and Deploy ###
+
+codegen:
+	make gen-sql
+
+build-docker: codegen
+	docker build -f ./Dockerfile . -t go-template
