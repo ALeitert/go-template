@@ -12,11 +12,29 @@ import (
 // program is working even if no file is provided or if it is incomplete.
 var C = Config{
 	// Initialise the default config here.
+
+	Database: dbConfig{
+		Host: "localhost",
+		Port: 5432,
+		// User: "",
+		// Password: "",
+		// Name: "",
+	},
+}
+
+type dbConfig struct {
+	Host     string `yaml:"host"`
+	Port     uint16 `yaml:"port"`
+	User     string `yaml:"user"`
+	Password string `yaml:"password"`
+	Name     string `yaml:"name"`
 }
 
 type Config struct {
 	// Define config structure here.
 	// Do not forget the `yaml` or `json` tags.
+
+	Database dbConfig `yaml:"database"`
 }
 
 func (c *Config) Load(configPath string) error {

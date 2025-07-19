@@ -39,3 +39,15 @@ ut:
 
 build-docker:
 	docker build -f ./Dockerfile . -t go-template
+
+
+### SQL ###
+
+DB_DIR=$(PROJ_DIR)/internal/database
+
+gen-sql: gen-clean-sql
+	echo $(PROJ_DIR)
+	docker run --rm -v $(DB_DIR):/src -w /src/sql sqlc/sqlc generate
+
+gen-clean-sql:
+	@cd $(DB_DIR)/querier && rm -f *gen.go
