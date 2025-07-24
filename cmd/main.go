@@ -12,6 +12,7 @@ import (
 
 	"template/internal/config"
 	"template/internal/database"
+	"template/internal/metrics"
 	"template/internal/services"
 )
 
@@ -54,6 +55,7 @@ func run(ctx context.Context) error {
 
 	err = services.Run(ctx, []services.Service{
 		// List services here.
+		&metrics.Server{},
 	})
 	if err != nil {
 		return eris.Wrap(err, "error while running services")
