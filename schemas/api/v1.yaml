@@ -1,0 +1,31 @@
+openapi: "3.0.3"
+
+info:
+  version: 1.0.0
+  title: API Server v1
+
+servers:
+  - url: /api/v1
+
+paths:
+  /ping:
+    get:
+      responses:
+        '200':
+          description: pet response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pong'
+
+components:
+  schemas:
+    # base types
+    Pong:
+      type: object
+      required:
+        - ping
+      properties:
+        ping:
+          type: string
+          example: pong

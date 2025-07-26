@@ -10,6 +10,7 @@ import (
 
 	"github.com/risingwavelabs/eris"
 
+	"template/internal/api"
 	"template/internal/config"
 	"template/internal/database"
 	"template/internal/metrics"
@@ -55,6 +56,7 @@ func run(ctx context.Context) error {
 
 	err = services.Run(ctx, []services.Service{
 		// List services here.
+		&api.Server{},
 		&metrics.Server{},
 	})
 	if err != nil {

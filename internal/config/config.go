@@ -13,6 +13,7 @@ import (
 var C = Config{
 	// Initialise the default config here.
 
+	APIPort:     8080,
 	MetricsPort: 9090,
 
 	Database: dbConfig{
@@ -35,6 +36,9 @@ type dbConfig struct {
 type Config struct {
 	// Define config structure here.
 	// Do not forget the `yaml` or `json` tags.
+
+	// Port used for the API server.
+	APIPort uint16 `yaml:"apiPort"`
 
 	// Port used to expose Prometheus metrics.
 	MetricsPort uint16 `yaml:"metricsPort"`

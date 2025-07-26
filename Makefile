@@ -39,9 +39,33 @@ gen-clean-sql:
 	@cd $(DB_DIR)/querier && rm -f *gen.go
 
 
+### OpenAPI ###
+
+API_CODE_DIR=$(PROJ_DIR)/internal/api
+API_SPEC_DIR=$(PROJ_DIR)/schemas/api
+
+check-oapi-codegen:
+	$(eval OAPI_GEN_VERSION=$(shell curl -s https://api.github.com/repos/oapi-codegen/oapi-codegen/releases/latest | jq -r '.tag_name'))
+	@$(PROJ_DIR)/bin/oapi-codegen --version | grep -qF "$(OAPI_GEN_VERSION)" || { \
+		echo "oapi-codegen not found or version mismatch (expected $(OAPI_GEN_VERSION)). Installing..."; \
+		$(MAKE) install-oapi-codegen; \
+	}
+
+install-oapi-codegen:
+	@GOBIN=$(PROJ_DIR)/bin go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@latest
+
+oapi-codegen: check-oapi-codegen
+	$(PROJ_DIR)/bin/oapi-codegen \
+		--config=$(API_SPEC_DIR)/oapi-service.yaml \
+		--package=v1 \
+		$(API_SPEC_DIR)/v1.yaml \
+		> $(API_CODE_DIR)/v1/spec.gen.go
+
+
 ### Build and Deploy ###
 
 codegen:
+	make oapi-codegen
 	make gen-sql
 	go mod tidy
 
