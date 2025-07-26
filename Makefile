@@ -29,14 +29,19 @@ ut:
 
 ### SQL ###
 
-DB_DIR=$(PROJ_DIR)/internal/database
+DB_CODE_DIR=$(PROJ_DIR)/internal/database/querier
+DB_SPEC_DIR=$(PROJ_DIR)/schemas/sql
 
 gen-sql: gen-clean-sql
 	echo $(PROJ_DIR)
-	docker run --rm -v $(DB_DIR):/src -w /src/sql sqlc/sqlc generate
+	docker run --rm \
+		-v $(DB_CODE_DIR):/src/querier \
+		-v $(DB_SPEC_DIR):/src/sql \
+		-w /src/sql \
+		sqlc/sqlc generate
 
 gen-clean-sql:
-	@cd $(DB_DIR)/querier && rm -f *gen.go
+	@cd $(DB_SPEC_DIR) && rm -f *gen.go
 
 
 ### OpenAPI ###
