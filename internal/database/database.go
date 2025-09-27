@@ -16,13 +16,19 @@ import (
 
 var (
 	pool  *pgxpool.Pool
-	model querier.Querier
+	model Model
 )
 
 const (
 	QueryTimeout       = 10 * time.Second
 	TransactionTimeout = 10 * time.Second
 )
+
+// Allows to perform the defined queries as well as hard-code queries.
+type Model interface {
+	querier.Querier
+	querier.DBTX
+}
 
 func Connect(ctx context.Context) error {
 	var err error
@@ -40,7 +46,7 @@ func Connect(ctx context.Context) error {
 		return err
 	}
 
-	model = querier.New(pool)
+	model = querier.NewModel(pool)
 
 	return nil
 }
@@ -69,7 +75,7 @@ func openDatabase(ctx context.Context) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func TxExec(ctx context.Context, tx func(ctx context.Context, model querier.Querier) error) (err error) {
+func TxExec(ctx context.Context, tx func(ctx context.Context, model Model) error) (err error) {
 	txCon, err := pool.Begin(ctx)
 	if err != nil {
 		return eris.Wrap(err, "failed to start transaction")
@@ -83,15 +89,20 @@ func TxExec(ctx context.Context, tx func(ctx context.Context, model querier.Quer
 		err = errors.Join(err, rbErr)
 	}()
 
-	err = tx(ctx, querier.New(txCon))
+	err = tx(ctx, querier.NewModel(txCon))
 	if err != nil {
 		return err
 	}
 
-	return txCon.Commit(ctx)
+	err = txCon.Commit(ctx)
+	if err != nil {
+		return eris.Wrap(err, "failed to commit transaction")
+	}
+
+	return
 }
 
-func TxQuery[T any](ctx context.Context, tx func(ctx context.Context, model querier.Querier) (T, error)) (result T, err error) {
+func TxQuery[T any](ctx context.Context, tx func(ctx context.Context, model Model) (T, error)) (result T, err error) {
 	var zeroT T
 	txCon, err := pool.Begin(ctx)
 	if err != nil {
@@ -110,14 +121,14 @@ func TxQuery[T any](ctx context.Context, tx func(ctx context.Context, model quer
 		}
 	}()
 
-	result, err = tx(ctx, querier.New(txCon))
+	result, err = tx(ctx, querier.NewModel(txCon))
 	if err != nil {
 		return zeroT, err
 	}
 
 	err = txCon.Commit(ctx)
 	if err != nil {
-		return zeroT, err
+		return zeroT, eris.Wrap(err, "failed to commit transaction")
 	}
 
 	return result, nil
