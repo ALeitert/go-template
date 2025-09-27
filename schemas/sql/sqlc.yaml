@@ -15,6 +15,7 @@ sql:
         output_querier_file_name: "querier.gen.go"
         output_copyfrom_file_name: "copyfrom.gen.go"
         emit_result_struct_pointers: true
+        emit_interface: true
         overrides:
           - db_type: "timestamptz"
             go_type:

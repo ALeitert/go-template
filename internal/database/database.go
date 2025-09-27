@@ -2,10 +2,13 @@ package database
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/risingwavelabs/eris"
 
 	"template/internal/config"
 	"template/internal/database/querier"
@@ -13,7 +16,7 @@ import (
 
 var (
 	pool  *pgxpool.Pool
-	model *querier.Queries
+	model querier.Querier
 )
 
 const (
@@ -64,4 +67,58 @@ func openDatabase(ctx context.Context) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func TxExec(ctx context.Context, tx func(ctx context.Context, model querier.Querier) error) (err error) {
+	txCon, err := pool.Begin(ctx)
+	if err != nil {
+		return eris.Wrap(err, "failed to start transaction")
+	}
+
+	defer func() {
+		rbErr := txCon.Rollback(ctx)
+		if errors.Is(rbErr, pgx.ErrTxClosed) {
+			rbErr = nil
+		}
+		err = errors.Join(err, rbErr)
+	}()
+
+	err = tx(ctx, querier.New(txCon))
+	if err != nil {
+		return err
+	}
+
+	return txCon.Commit(ctx)
+}
+
+func TxQuery[T any](ctx context.Context, tx func(ctx context.Context, model querier.Querier) (T, error)) (result T, err error) {
+	var zeroT T
+	txCon, err := pool.Begin(ctx)
+	if err != nil {
+		return zeroT, eris.Wrap(err, "failed to start transaction")
+	}
+
+	defer func() {
+		rbErr := txCon.Rollback(ctx)
+		if errors.Is(rbErr, pgx.ErrTxClosed) {
+			rbErr = nil
+		}
+		err = errors.Join(err, rbErr)
+
+		if err != nil {
+			result = zeroT
+		}
+	}()
+
+	result, err = tx(ctx, querier.New(txCon))
+	if err != nil {
+		return zeroT, err
+	}
+
+	err = txCon.Commit(ctx)
+	if err != nil {
+		return zeroT, err
+	}
+
+	return result, nil
 }
