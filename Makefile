@@ -23,8 +23,58 @@ lint-check: check-golangci-lint
 
 ### Unit Tests ###
 
-ut:
-	go test -parallel=1 -race ./...
+DB_USER=user
+DB_PASS=postgres
+DB_NAME=utdb
+DB_PORT=5432
+
+DB_JSON={ \
+	"host":"localhost", \
+	"port":$(DB_PORT), \
+	"user":"$(DB_USER)", \
+	"password":"$(DB_PASS)", \
+	"name":"$(DB_NAME)" \
+	}
+
+DB_CON_STR=postgres://$(DB_USER):$(DB_PASS)@localhost:$(DB_PORT)/$(DB_NAME)?sslmode=disable
+
+PG_CONTAINER=my-postgres
+PG_READY_CMD=\
+	docker exec $(PG_CONTAINER) \
+	psql $(DB_CON_STR) -c ";" \
+	2> /dev/null
+
+MIGR_DIR=$(DB_SPEC_DIR)/migrations
+
+ut-setup:
+	docker rm -f $(PG_CONTAINER)
+	docker run -dti --rm \
+		--name $(PG_CONTAINER) \
+		-e POSTGRES_USER=$(DB_USER) \
+		-e POSTGRES_PASSWORD=$(DB_PASS) \
+		-e POSTGRES_DB=$(DB_NAME) \
+		-p $(DB_PORT):$(DB_PORT) \
+		postgres:latest
+	timeout 60 bash -c 'until $(PG_READY_CMD); do sleep 1 ; done'
+	docker run \
+		-v $(MIGR_DIR):/migrations --network host \
+		migrate/migrate \
+		-path=/migrations/ \
+		-database $(DB_CON_STR) \
+		up
+
+ut-shut-down:
+	yes | docker run -i \
+		-v $(MIGR_DIR):/migrations --network host \
+		migrate/migrate \
+		-path=/migrations/ \
+		-database $(DB_CON_STR) \
+		down
+	docker rm -f $(PG_CONTAINER)
+
+ut: ut-setup
+	DB_CONFIG='$(DB_JSON)' go test -parallel=1 -race ./...
+	$(MAKE) ut-shut-down
 
 
 ### SQL ###
