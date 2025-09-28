@@ -75,7 +75,10 @@ func openDatabase(ctx context.Context) (*pgxpool.Pool, error) {
 	return pool, nil
 }
 
-func TxExec(ctx context.Context, tx func(ctx context.Context, model Model) error) (err error) {
+func TxExec(
+	ctx context.Context,
+	tx func(ctx context.Context, model Model) error,
+) (err error) {
 	txCon, err := pool.Begin(ctx)
 	if err != nil {
 		return eris.Wrap(err, "failed to start transaction")
@@ -102,7 +105,10 @@ func TxExec(ctx context.Context, tx func(ctx context.Context, model Model) error
 	return
 }
 
-func TxQuery[T any](ctx context.Context, tx func(ctx context.Context, model Model) (T, error)) (result T, err error) {
+func TxQuery[T any](
+	ctx context.Context,
+	tx func(ctx context.Context, model Model) (T, error),
+) (result T, err error) {
 	var zeroT T
 	txCon, err := pool.Begin(ctx)
 	if err != nil {
